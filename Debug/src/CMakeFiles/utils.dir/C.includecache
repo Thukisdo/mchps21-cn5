@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/utils.h
+stdlib.h
+-
+stdio.h
+-
+
+/home/thukisdo/Bureau/Cours/M1/NUMERICAL/TP5/src/utils.c
+utils.h
+/home/thukisdo/Bureau/Cours/M1/NUMERICAL/TP5/src/utils.h
+
