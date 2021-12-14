@@ -31,9 +31,10 @@ int main() {
   int lab = 3;
   A = (double *) malloc(la * lab * sizeof(double));
 
+  // Test our call to dgbmv using
+  // vectors
   x = random_dvec(la, 0, 0);
   y = random_dvec(la, 0, 0);
-
 
   // Random initialization
   set_GB_operator_colMajor_poisson1D(A, lab, la, 0);
@@ -43,11 +44,13 @@ int main() {
     }
     printf("\n");
   }
+
+  // FIXME: move me to a test file
   for (size_t i = 0; i < la; i++) {
     x = random_dvec(la, 0, 0);
     x[i] = 1.0;
     printf("i = %zu\n", i);
-    dgbmv_col_major(1.0, A, x, la, lab, 1.0, y);
+    dgbmv_col_major(1.0, A, x, la, lab, 0.0, y);
     for (size_t j = 0; j < la; j++) {
       printf("y[%d] = %f\n", j, y[j]);
     }
@@ -55,10 +58,6 @@ int main() {
     free(x);
   }
   free(y);
-
-  // Random initialization
-  // set_GB_operator_rowMajor_poisson1D(A, lab, la, 0);
-  // dgbmv_row_major(1, A, x, la, lab, 1, y);
 
   return 0;
 }

@@ -1,0 +1,9 @@
+#IDE related
+.idea
+
+# Usual build directories
+Debug
+Release
+cmake-build-debug
+cmake-build-release
+cmake-build-reldeb

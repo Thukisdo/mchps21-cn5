@@ -1,4 +1,0 @@
-/home/thukisdo/Bureau/CLion/clion-2021.2.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/thukisdo/Bureau/Cours/M1/NUMERICAL/TP5
--- Configuring done
--- Generating done
--- Build files have been written to: /home/thukisdo/Bureau/Cours/M1/NUMERICAL/TP5/Release

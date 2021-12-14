@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpoisson1D.a CMakeFiles/poisson1D.dir/lib_poisson1D.c.o
-/usr/bin/ranlib libpoisson1D.a
