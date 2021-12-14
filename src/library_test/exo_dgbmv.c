@@ -1,5 +1,5 @@
 #include "blaslapack_headers.h"
-#include "lib_poisson1D.h"
+#include "poisson1D.h"
 #include "clapack.h"
 #include "utils.h"
 
@@ -33,8 +33,8 @@ int main() {
 
   // Test our call to dgbmv using
   // vectors
-  x = random_dvec(la, 0, 0);
-  y = random_dvec(la, 0, 0);
+  x = rand_dvec(la, 0, 0);
+  y = rand_dvec(la, 0, 0);
 
   // Random initialization
   set_GB_operator_colMajor_poisson1D(A, lab, la, 0);
@@ -47,12 +47,12 @@ int main() {
 
   // FIXME: move me to a test file
   for (size_t i = 0; i < la; i++) {
-    x = random_dvec(la, 0, 0);
+    x = rand_dvec(la, 0, 0);
     x[i] = 1.0;
     printf("i = %zu\n", i);
     dgbmv_col_major(1.0, A, x, la, lab, 0.0, y);
     for (size_t j = 0; j < la; j++) {
-      printf("y[%d] = %f\n", j, y[j]);
+      printf("y[%zu] = %f\n", j, y[j]);
     }
     printf("\n");
     free(x);

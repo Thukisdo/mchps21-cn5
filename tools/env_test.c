@@ -3,7 +3,7 @@
 /* This file contains a main function to  */
 /* test the environment of compilation    */
 /******************************************/
-#include "tp_env.h"
+#include "env_test.h"
 
 int main(int argc, char *argv[])
 /* ** argc: Number of arguments */

@@ -3,7 +3,7 @@
 /* This file contains the main function   */
 /* to solve the Poisson 1D problem        */
 /******************************************/
-#include "lib_poisson1D.h"
+#include "poisson1D.h"
 
 int main(int argc, char *argv[])
 /* ** argc: Number of arguments */
