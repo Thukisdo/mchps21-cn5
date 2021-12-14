@@ -2,10 +2,21 @@ cmake_minimum_required(VERSION 3.0)
 
 project(CN-TP5)
 
-set(LAPACK_DIR "/usr/include/openblas/")
+# Add the path to lapacke.h
+if (NOT DEFINED LAPACK_DIR)
+  message(FATAL_ERROR "LAPACK_DIR must be set prior to launching CMake")
+endif()
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(src)
+
+# Stores scripts for dependency resolution
+# and installation
+add_subdirectory(extern)
+
+# Enable testing in the root directory
+enable_testing()
+add_subdirectory(tests)

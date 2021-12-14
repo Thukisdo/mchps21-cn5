@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
   if (row == 1) { // LAPACK_ROW_MAJOR
 
-    set_GB_operator_rowMajor_poisson1D(AB, lab, la);
+    set_GB_operator_rowMajor_poisson1D(AB, lab, la, 1);
 
     //write_GB_operator_rowMajor_poisson1D(AB, &lab, &la, "AB_row.dat");
     info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, la, kl, ku, NRHS, AB, la, ipiv, RHS, NRHS);
