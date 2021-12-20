@@ -4,14 +4,12 @@
 /* to solve the Poisson 1D problem        */
 /******************************************/
 #include "poisson1D.h"
+#include <time.h>
 
-int main(int argc, char *argv[])
-/* ** argc: Number of arguments */
-/* ** argv: Values of arguments */
-{
+void run_jacobi(int nbpoints) {
   int ierr;
   int jj;
-  int nbpoints, la;
+  int la;
   int ku, kl, lab, kv;
   // Initialisation ???
   int *ipiv;
@@ -29,14 +27,12 @@ int main(int argc, char *argv[])
 
   /* Size of the problem */
   NRHS = 1;
-  nbpoints = 102;
   la = nbpoints - 2;
 
   /* Dirichlet Boundary conditions */
   T0 = -5.0;
   T1 = 5.0;
 
-  printf("--------- Poisson 1D ---------\n\n");
   // Error checking ???
   RHS = (double *) malloc(sizeof(double) * la);
   SOL = (double *) calloc(la, sizeof(double));
@@ -45,13 +41,13 @@ int main(int argc, char *argv[])
 
   /* Setup the Poisson 1D problem */
   /* General Band Storage */
-  set_grid_points_1D(X, &la);
+  setGridPoints(X, &la);
   set_dense_RHS_DBC_1D(RHS, &la, &T0, &T1);
-  set_analytical_solution_DBC_1D(EX_SOL, X, &la, &T0, &T1);
+  computeAnalyticalSolution(EX_SOL, X, &la, &T0, &T1);
 
-  write_vec(RHS, &la, "RHS.dat");
-  write_vec(EX_SOL, &la, "EX_SOL.dat");
-  write_vec(X, &la, "X_grid.dat");
+  writeVec(RHS, &la, "RHS.dat");
+  writeVec(EX_SOL, &la, "EX_SOL.dat");
+  writeVec(X, &la, "X_grid.dat");
 
   kv = 0;
   ku = 1;
@@ -60,36 +56,46 @@ int main(int argc, char *argv[])
 
   // Error checking ???
   AB = (double *) malloc(sizeof(double) * lab * la);
-  set_GB_operator_colMajor_poisson1D(AB, lab, la, kv);
-
-  /* uncomment the following to check matrix A */
-  // write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "AB.dat");
-
-  /********************************************/
-  /* Solution (Richardson with optimal alpha) */
-  /* TODO ex 6 - 7 */
-  /* Modify lib_poisson1D.c and uncomment the following */
-
+  makeColMajorGBand(AB, lab, la, kv);
 
   /* Computation of optimum alpha */
 
-
-  //opt_alpha = richardson_alpha_opt(&la);
-  printf("TODO Optimal alpha for simple Richardson iteration is : %lf", opt_alpha);
+  opt_alpha = computeRichardsonOptAlpha(la);
 
   /* Solve */
-  double tol = 1e-3;
-  int maxit = 100;
-  //richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol, &maxit);
+  double tol = 1e-8;
+  int maxit = 10000;
+  richardsonWithAlpha(AB, RHS, SOL, 0.5, lab, la, ku, kl, tol, maxit);
 
   /* Write solution */
-  write_vec(SOL, &la, "SOL.dat");
+  writeVec(SOL, &la, "SOL.dat");
 
   free(RHS);
   free(SOL);
   free(EX_SOL);
   free(X);
   free(AB);
-  printf("\n\n--------- End -----------\n");
   // ??? Return ???
+}
+
+int main(int argc, char *argv[])
+/* ** argc: Number of arguments */
+/* ** argv: Values of arguments */
+{
+  FILE* out = fopen("jacobi_time.dat", "w");
+  const int kSampleSize = 5;
+
+  for (int i = 10; i <= 300; i++) {
+    // This is a really simple time measurement
+    // since we take into account the matrix creation
+    // but this is easier
+    clock_t begin = clock();
+    for (size_t j = 0; j < kSampleSize; j++) {
+      run_jacobi(i);
+    }
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC / kSampleSize;
+    fprintf(out, "%i %f\n", i, time_spent);
+  }
+  fclose(out);
 }

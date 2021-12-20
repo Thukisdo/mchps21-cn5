@@ -1,40 +1,48 @@
 /******************************************/
-/* tp2_poisson1D_direct.c                 */
+/* tp2_poisson1D_iter.c                 */
 /* This file contains the main function   */
 /* to solve the Poisson 1D problem        */
 /******************************************/
 #include "poisson1D.h"
-#include "time.h"
+#include <time.h>
 
-int run_dgbsv(int nbpoints)
-/* ** argc: Number of arguments */
-/* ** argv: Values of arguments */
-{
+void run_gseidel(int nbpoints) {
   int ierr;
   int jj;
   int la;
-  int ku, kl, kv, lab;
+  int ku, kl, lab, kv;
   // Initialisation ???
   int *ipiv;
   int info;
   int NRHS;
   double T0, T1;
   // Initialisation ???
-  double *RHS, *EX_SOL, *X;
+  double *RHS, *SOL, *EX_SOL, *X;
   // Initialisation ???
   double *AB;
 
   double temp, relres;
 
+  double opt_alpha;
+
+  /* Size of the problem */
   NRHS = 1;
   la = nbpoints - 2;
+
+  /* Dirichlet Boundary conditions */
   T0 = -5.0;
   T1 = 5.0;
 
+  // Error checking ???
   RHS = (double *) malloc(sizeof(double) * la);
+  SOL = (double *) calloc(la, sizeof(double));
   EX_SOL = (double *) malloc(sizeof(double) * la);
   X = (double *) malloc(sizeof(double) * la);
 
+  cblas_dscal(la, 0.0, SOL, 1);
+
+  /* Setup the Poisson 1D problem */
+  /* General Band Storage */
   setGridPoints(X, &la);
   set_dense_RHS_DBC_1D(RHS, &la, &T0, &T1);
   computeAnalyticalSolution(EX_SOL, X, &la, &T0, &T1);
@@ -43,61 +51,36 @@ int run_dgbsv(int nbpoints)
   writeVec(EX_SOL, &la, "EX_SOL.dat");
   writeVec(X, &la, "X_grid.dat");
 
-  kv = 1;
+  kv = 0;
   ku = 1;
   kl = 1;
   lab = kv + kl + ku + 1;
 
+  // Error checking ???
   AB = (double *) malloc(sizeof(double) * lab * la);
+  makeColMajorGBand(AB, lab, la, kv);
 
-  info = 0;
+  /* Solve */
+  double tol = 1e-8;
+  int maxit = 10000;
+  gaussSeidel(AB, RHS, SOL, lab, la, ku, kl, tol, maxit);
 
-  /* working array for pivot used by LU Factorization */
-  ipiv = (int *) calloc(la, sizeof(int));
-
-  int row = 0; //
-
-  if (row == 1) { // LAPACK_ROW_MAJOR
-
-    makeRowMajorGBand(AB, lab, la, 1);
-
-    //write_GB_operator_rowMajor_poisson1D(AB, &lab, &la, "AB_row.dat");
-    info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, la, kl, ku, NRHS, AB, la, ipiv, RHS, NRHS);
-
-  } else { // LAPACK_COL_MAJOR
-    makeColMajorGBand(AB, lab, la, kv);
-    writeColMajorGBand(AB, &lab, &la, "AB_col.dat");
-
-    LAPACKE_dgbsv(LAPACK_COL_MAJOR, la, kl, ku, NRHS, AB, lab, ipiv, RHS, la);
-  }
-
-
-
-  write_xy(RHS, X, &la, "SOL.dat");
-
-  /* Relative residual */
-  temp = cblas_ddot(la, RHS, 1, RHS, 1);
-  temp = sqrt(temp);
-  cblas_daxpy(la, -1.0, RHS, 1, EX_SOL, 1);
-  relres = cblas_ddot(la, EX_SOL, 1, EX_SOL, 1);
-  relres = sqrt(relres);
-  relres = relres / temp;
+  /* Write solution */
+  writeVec(SOL, &la, "SOL.dat");
 
   free(RHS);
+  free(SOL);
   free(EX_SOL);
   free(X);
   free(AB);
-  free(ipiv);
-
-  return (long) ":)";
+  // ??? Return ???
 }
-
 
 int main(int argc, char *argv[])
 /* ** argc: Number of arguments */
 /* ** argv: Values of arguments */
 {
-  FILE* out = fopen("dgbsv_time.dat", "w");
+  FILE* out = fopen("gs_time.dat", "w");
   const int kSampleSize = 5;
 
   for (int i = 10; i <= 300; i++) {
@@ -106,7 +89,7 @@ int main(int argc, char *argv[])
     // since we take into account the matrix creation
     // but this is easier
     for (size_t j = 0; j < kSampleSize; j++) {
-      run_dgbsv(i);
+      run_gseidel(i);
     }
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC / kSampleSize;

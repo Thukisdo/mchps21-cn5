@@ -5,7 +5,7 @@
 /**********************************************/
 #include "poisson1D.h"
 
-void set_GB_operator_rowMajor_poisson1D(double *AB, int lab, int la, int kv) {
+void makeRowMajorGBand(double *AB, int lab, int la, int kv) {
 
   for (int j = 0; j < la * kv; j++) {
     AB[j] = 0;
@@ -27,7 +27,7 @@ void set_GB_operator_rowMajor_poisson1D(double *AB, int lab, int la, int kv) {
   AB[lab * la - 1] = 0;
 }
 
-void set_GB_operator_colMajor_poisson1D(double *AB, int lab, int la, int kv) {
+void makeColMajorGBand(double *AB, int lab, int la, int kv) {
   for (int j = 0; j < la; j++) {
     int k = j * lab;
     if (kv >= 0) {
@@ -45,7 +45,7 @@ void set_GB_operator_colMajor_poisson1D(double *AB, int lab, int la, int kv) {
   AB[lab * la - 1] = 0.0;
 }
 
-void set_GB_operator_colMajor_poisson1D_Id(double *AB, int lab, int la, int kv) {
+void makeColMajorGBIdentity(double *AB, int lab, int la, int kv) {
   for (int j = 0; j < la; j++) {
     int k = j * lab;
     if (kv >= 0) {
@@ -70,7 +70,7 @@ void set_dense_RHS_DBC_1D(double *RHS, int *la, double *BC0, double *BC1) {
   }
 }
 
-void set_analytical_solution_DBC_1D(double *EX_SOL, double *X, int *la, double *BC0, double *BC1) {
+void computeAnalyticalSolution(double *EX_SOL, double *X, int *la, double *BC0, double *BC1) {
   int jj;
   double h, DELTA_T;
   DELTA_T = (*BC1) - (*BC0);
@@ -79,7 +79,7 @@ void set_analytical_solution_DBC_1D(double *EX_SOL, double *X, int *la, double *
   }
 }
 
-void set_grid_points_1D(double *x, int *la) {
+void setGridPoints(double *x, int *la) {
   int jj;
   double h;
   h = 1.0 / (1.0 * ((*la) + 1));
@@ -88,7 +88,7 @@ void set_grid_points_1D(double *x, int *la) {
   }
 }
 
-void write_GB_operator_rowMajor_poisson1D(double *AB, int *lab, int *la, char *filename) {
+void writeRowMajorGBand(double *AB, int *lab, int *la, char *filename) {
   FILE *file;
   int ii, jj;
   file = fopen(filename, "w");
@@ -106,11 +106,11 @@ void write_GB_operator_rowMajor_poisson1D(double *AB, int *lab, int *la, char *f
   }
 }
 
-void write_GB_operator_colMajor_poisson1D(double *AB, int *lab, int *la, char *filename) {
+void writeColMajorGBand(double *AB, int *lab, int *la, char *filename) {
   //TODO
 }
 
-void write_vec(double *vec, int *la, char *filename) {
+void writeVec(double *vec, int *la, char *filename) {
   int jj;
   FILE *file;
   file = fopen(filename, "w");
@@ -140,7 +140,7 @@ void write_xy(double *vec, double *x, int *la, char *filename) {
   }
 }
 
-void eig_poisson1D(double *eigval, int *la) {
+void computeEigenValues(double *eigval, int *la) {
   int ii;
   double scal;
   for (ii = 0; ii < *la; ii++) {
@@ -150,25 +150,130 @@ void eig_poisson1D(double *eigval, int *la) {
   }
 }
 
-double eigmax_poisson1D(int *la) {
-  double eigmax;
-  eigmax = sin(*la * M_PI_2 * (1.0 / (*la + 1)));
-  eigmax = 4 * eigmax * eigmax;
+double computeMaxEigenValue(int la) {
+  double eigmax = sin(la * M_PI_2 * (1.0 / (la + 1)));
+  eigmax = 4.0 * eigmax * eigmax;
   return eigmax;
 }
 
-double eigmin_poisson1D(int *la) {
-  double eigmin;
-  eigmin = sin(M_PI_2 * (1.0 / (*la + 1)));
-  eigmin = 4 * eigmin * eigmin;
+double computeMinEigenValue(int la) {
+  double eigmin = sin(M_PI_2 * (1.0 / (la + 1)));
+  eigmin = 4.0 * eigmin * eigmin;
   return eigmin;
 }
 
-double richardson_alpha_opt(int *la) {
-  //TODO
+double computeRichardsonOptAlpha(int la) {
+  return 2.0 / (computeMaxEigenValue(la) + computeMinEigenValue(la));
 }
 
-void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, int *lab, int *la, int *ku, int *kl,
-                      double *tol, int *maxit) {
-  //TODO
+void gaussSeidel(double *AB, double *RHS, double *X, int lab, int la, int ku, int kl,
+                 double tol, int maxit) {
+  double *work = malloc(sizeof(double) * la);
+
+  double res_norm = 1;
+  size_t counter = 0;
+
+  // This is suboptimal since M is a lower triangular
+  // But I am too lazy to do this properly
+  // The inverse of a tridiagonal matrix isn't tridiagonal
+  // So we'll use a dense matrix to store the result (a lower triangular)
+  double *M = malloc(sizeof(double) * la * la);
+
+  for (size_t i = 0; i < la * la; i++) {
+    M[i] = 0.0;
+  }
+
+  // Build the lower diagonal matrix
+  for (size_t i = 0; i < la; i++) {
+    M[i * la + i] = AB[lab * i + 1];
+  }
+
+  for (size_t i = 0; i < la - 1; i++) {
+    M[(i + 1) * la + i] = AB[lab * i + 2];
+  }
+
+  // Inverse it
+  int* ipiv = malloc(sizeof(int) * la);
+  LAPACKE_dgetrf(CblasRowMajor, la, la, M, la, ipiv);
+  LAPACKE_dgetri(CblasRowMajor, la, M, la, ipiv);
+  free(ipiv);
+
+  // x(k+1) = x(k) + M^(-1)(b - Ax(k))
+  while (res_norm > tol && counter < maxit) {
+
+    cblas_dcopy(la, RHS, 1, work, 1);
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, la, la, kl, ku, -1.0, AB, lab, X, 1, 1.0, work, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, la, la, 1.0, M, la, work, 1, 1.0, X, 1);
+    // Commented out for performance measurement
+    // res_norm = cblas_dnrm2(la, work, 1);
+    // res_norm /= cblas_dnrm2(la, X, 1);
+    //printf("%zu %.16lf\n", counter, res_norm);
+    counter++;
+  }
+  free(M);
+  free(work);
 }
+
+void optimGaussSeidel(double *AB, double *RHS, double *X, int lab, int la, int ku, int kl,
+                 double tol, int maxit) {
+  double *work = malloc(sizeof(double) * la);
+
+  size_t counter = 0;
+
+  // This is suboptimal since M is a lower triangular
+  // But I am too lazy to do this properly
+  // The inverse of a tridiagonal matrix isn't tridiagonal
+  // So we'll use a dense matrix to store the result (a lower triangular)
+  double *M = malloc(sizeof(double) * la * la);
+
+  // Build the lower diagonal matrix
+  for (size_t i = 0; i < la; i++) {
+    M[i * la + i] = AB[lab * i + 1];
+  }
+
+  for (size_t i = 0; i < la - 1; i++) {
+    M[(i +1) * la + i] = AB[lab * i + 2];
+  }
+
+  // Inverse it
+  int* ipiv = malloc(sizeof(int) * la);
+  LAPACKE_dgetrf(CblasRowMajor, la, la, M, la, ipiv);
+  LAPACKE_dgetri(CblasRowMajor, la, M, la, ipiv);
+  free(ipiv);
+
+  // x(k+1) = (x(k) - M^(-1) * Ax(k)) M^(-1)b
+  while (counter < maxit) {
+
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, la, la, kl, ku, 1.0, AB, lab, X, 1, 0, work, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, la, la, -1.0, M, la, work, 1, 1.0, X, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, la, la, 1.0, M, la, RHS, 1, 1.0, X, 1);
+    counter++;
+  }
+  free(M);
+  free(work);
+}
+
+
+void richardsonWithAlpha(double *AB, double *RHS, double *X, double alpha_rich, int lab, int la, int ku, int kl,
+                         double tol, int maxit) {
+  double *work = malloc(sizeof(double) * la);
+
+  double res_norm = 1;
+  size_t counter = 0;
+
+  // x(k+1) = x(k) + alpha(b - Ax(k))
+  while (res_norm > tol && counter < maxit) {
+
+    cblas_dcopy(la, RHS, 1, work, 1);
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, la, la, kl, ku, -1.0, AB, lab, X, 1, 1.0, work, 1);
+    cblas_daxpy(la, alpha_rich, work, 1, X, 1);
+    // Commented out for performance measurement
+    //res_norm = cblas_dnrm2(la, work, 1);
+    //res_norm /= cblas_dnrm2(la, X, 1);
+    //printf("%zu %.16lf\n", counter, res_norm);
+    counter++;
+  }
+  free(work);
+}
+
+

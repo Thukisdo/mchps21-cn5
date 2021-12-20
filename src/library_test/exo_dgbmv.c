@@ -37,7 +37,7 @@ int main() {
   y = rand_dvec(la, 0, 0);
 
   // Random initialization
-  set_GB_operator_colMajor_poisson1D(A, lab, la, 0);
+  makeRowMajorGBand(A, lab, la, 0);
   for (size_t i = 0; i < lab; i++) {
     for (size_t j = 0; j < la; j++) {
       printf("%f ", A[i * la + j]);
@@ -50,7 +50,7 @@ int main() {
     x = rand_dvec(la, 0, 0);
     x[i] = 1.0;
     printf("i = %zu\n", i);
-    dgbmv_col_major(1.0, A, x, la, lab, 0.0, y);
+    dgbmv_row_major(1.0, A, x, la, lab, 0.0, y);
     for (size_t j = 0; j < la; j++) {
       printf("y[%zu] = %f\n", j, y[j]);
     }
