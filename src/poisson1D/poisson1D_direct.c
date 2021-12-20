@@ -71,8 +71,6 @@ int run_dgbsv(int nbpoints)
     LAPACKE_dgbsv(LAPACK_COL_MAJOR, la, kl, ku, NRHS, AB, lab, ipiv, RHS, la);
   }
 
-
-
   write_xy(RHS, X, &la, "SOL.dat");
 
   /* Relative residual */

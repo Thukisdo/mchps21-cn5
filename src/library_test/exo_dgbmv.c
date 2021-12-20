@@ -1,6 +1,5 @@
 #include "blaslapack_headers.h"
 #include "poisson1D.h"
-#include "clapack.h"
 #include "utils.h"
 
 // Performs a matrix-vector product using the DGBMV BLAS routine.
