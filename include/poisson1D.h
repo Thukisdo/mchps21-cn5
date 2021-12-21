@@ -10,6 +10,18 @@
 #include <limits.h>
 #include "blaslapack_headers.h"
 
+typedef struct {
+  double *rhs;
+  double *sol;
+  double *exact_sol;
+  double *x;
+  int la;
+} Poisson1DProblem;
+
+Poisson1DProblem createPoisson1D(int la, double T0, double T1, int write_to_file);
+
+void freePoisson1D(Poisson1DProblem p);
+
 void makeRowMajorGBand(double *AB, int lab, int la, int kv);
 
 void makeColMajorGBand(double *AB, int lab, int la, int kv);
@@ -38,14 +50,8 @@ double computeMinEigenValue(int la);
 
 double computeRichardsonOptAlpha(int la);
 
-void gaussSeidel(double *AB, double *RHS, double *X, int lab, int la, int ku, int kl,
-                 double tol, int maxit);
+void gaussSeidel(double *AB, Poisson1DProblem p, int lab, int ku, int kl,
+                 double tol, int maxit, FILE *out);
 
-void optimGaussSeidel(double *AB, double *RHS, double *X, int lab, int la, int ku, int kl,
-                 double tol, int maxit);
-
-void richardsonWithAlpha(double *AB, double *RHS, double *X, double alpha_rich, int lab, int la, int ku, int kl,
-                         double tol, int maxit);
-
-void optimRichardsonWithAlpha(double *AB, double *RHS, double *X, double alpha_rich, int lab, int la, int ku, int kl,
-                         double tol, int maxit);
+void richardsonWithAlpha(double *AB, Poisson1DProblem p, int lab, int ku, int kl,
+                         double tol, int maxit, FILE *out);

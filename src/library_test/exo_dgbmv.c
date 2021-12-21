@@ -7,7 +7,7 @@
 void dgbmv_row_major(double alpha, double *A, double *x, int la, int lab, double beta, double *y) {
 
   cblas_dgbmv(/*Order*/CblasRowMajor,/*Trans*/ CblasNoTrans,/*A rows*/ la, /*A cols*/
-                       la, /*N lower diagonals*/ 1, /*N Upper diagonals*/ 1, alpha, A, lab, x, /*inc x*/ 1,
+                       la, /*N lower diagonals*/ 1, /*N Upper diagonals*/ 1, alpha, A, la, x, /*inc x*/ 1,
                        beta, y, /*inc y*/1);
 }
 

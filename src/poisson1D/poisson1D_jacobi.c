@@ -6,96 +6,66 @@
 #include "poisson1D.h"
 #include <time.h>
 
-void run_jacobi(int nbpoints) {
-  int ierr;
-  int jj;
-  int la;
-  int ku, kl, lab, kv;
-  // Initialisation ???
-  int *ipiv;
-  int info;
-  int NRHS;
-  double T0, T1;
-  // Initialisation ???
-  double *RHS, *SOL, *EX_SOL, *X;
-  // Initialisation ???
-  double *AB;
+double runJacobi(int nbpoints, double tol, int maxiter, FILE* out) {
+  int la = nbpoints;
+  double T0 = -5.0, T1 = 5;
 
-  double temp, relres;
+  int kv = 0;
+  int ku = 1;
+  int kl = 1;
+  int lab = kv + kl + ku + 1;
 
-  double opt_alpha;
-
-  /* Size of the problem */
-  NRHS = 1;
-  la = nbpoints - 2;
-
-  /* Dirichlet Boundary conditions */
-  T0 = -5.0;
-  T1 = 5.0;
+  Poisson1DProblem p = createPoisson1D(la, T0, T1, 0);
 
   // Error checking ???
-  RHS = (double *) malloc(sizeof(double) * la);
-  SOL = (double *) calloc(la, sizeof(double));
-  EX_SOL = (double *) malloc(sizeof(double) * la);
-  X = (double *) malloc(sizeof(double) * la);
-
-  /* Setup the Poisson 1D problem */
-  /* General Band Storage */
-  setGridPoints(X, &la);
-  set_dense_RHS_DBC_1D(RHS, &la, &T0, &T1);
-  computeAnalyticalSolution(EX_SOL, X, &la, &T0, &T1);
-
-  writeVec(RHS, &la, "RHS.dat");
-  writeVec(EX_SOL, &la, "EX_SOL.dat");
-  writeVec(X, &la, "X_grid.dat");
-
-  kv = 0;
-  ku = 1;
-  kl = 1;
-  lab = kv + kl + ku + 1;
-
-  // Error checking ???
-  AB = (double *) malloc(sizeof(double) * lab * la);
+  double *AB = (double *) malloc(sizeof(double) * lab * la);
   makeColMajorGBand(AB, lab, la, kv);
 
-  /* Computation of optimum alpha */
-
-  opt_alpha = computeRichardsonOptAlpha(la);
-
   /* Solve */
-  double tol = 1e-8;
-  int maxit = 10000;
-  richardsonWithAlpha(AB, RHS, SOL, 0.5, lab, la, ku, kl, tol, maxit);
+  clock_t begin = clock();
+  gaussSeidel(AB, p, lab, ku, kl, tol, maxiter, out);
+  clock_t end = clock();
 
   /* Write solution */
-  writeVec(SOL, &la, "SOL.dat");
+  writeVec(p.sol, &la, "SOL.dat");
 
-  free(RHS);
-  free(SOL);
-  free(EX_SOL);
-  free(X);
   free(AB);
-  // ??? Return ???
+  freePoisson1D(p);
+  return (double) (end - begin) / CLOCKS_PER_SEC;
+}
+
+double perfJacobi(int nbpoints, double tol, int maxiter) {
+  return runJacobi(nbpoints, tol, maxiter, NULL);
+}
+
+void cvJacobi(int nbpoints, double tol, int maxiter) {
+  FILE* f = fopen("jacobi.dat", "w");
+  runJacobi(nbpoints, tol, maxiter, f);
+  fclose(f);
 }
 
 int main(int argc, char *argv[])
 /* ** argc: Number of arguments */
 /* ** argv: Values of arguments */
 {
-  FILE* out = fopen("jacobi_time.dat", "w");
+  FILE *out = fopen("perfJacobi.dat", "w");
   const int kSampleSize = 5;
+  const int maxiter = 10000;
 
   for (int i = 10; i <= 300; i++) {
+
     // This is a really simple time measurement
     // since we take into account the matrix creation
     // but this is easier
-    clock_t begin = clock();
+    double acc = 0;
     for (size_t j = 0; j < kSampleSize; j++) {
-      run_jacobi(i);
+      acc += perfJacobi(i, 10e-8, maxiter);
     }
-    clock_t end = clock();
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC / kSampleSize;
-    fprintf(out, "%i %f\n", i, time_spent);
+    acc /= kSampleSize;
+
+    fprintf(out, "%i %f\n", i, acc);
   }
   fclose(out);
+
+  cvJacobi(50, 10e-8, maxiter);
 }
