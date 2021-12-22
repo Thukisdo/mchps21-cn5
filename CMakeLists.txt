@@ -4,6 +4,7 @@ project(CN-TP5)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/blas.cmake)
 
+# Custom command to try setup blas
 try_find_blas(OpenBLAS)
 
 if (NOT DEFINED LAPACKE_DIR)
